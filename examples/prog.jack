@@ -1,4 +1,9 @@
 if (x < 0) {
-    // prints the sign
+    // prints bluh
     let sign = "negative";
 }
+
+/* Multiple test
+for
+comments      ok
+*/
