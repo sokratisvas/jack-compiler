@@ -124,6 +124,52 @@ fn tokenize(contents: Vec<char>) -> Vec<String> {
     tokens
 }
 
+fn classify_token(token: String) -> String {
+    match token {
+        _ if is_keyword(token.clone()) => {
+            "keyword".to_string()
+        }
+        _ if is_symbol(token.clone().chars().next().unwrap()) => {
+            "symbol".to_string()
+        }
+        _ if token.clone().starts_with('"') && token.clone().ends_with('"') => {
+            "stringConstant".to_string()
+        }
+        _ if token.clone().parse::<u16>().is_ok() => { // Integers 0 upto 2^16 - 1
+            "integerConstant".to_string()
+        }
+        _ => {
+            "identifier".to_string()
+        }
+    }
+}
+
+fn markup_token(token: String) -> String {
+    match token.as_str() {
+        _ if token.clone().starts_with('"') && token.clone().ends_with('"') => {
+            let mut chars = token.chars();
+            chars.next();
+            chars.next_back();
+            chars.as_str().to_string()
+        }
+        ">" => {
+            "&gt".to_string()
+        }
+        "<" => {
+            "&lt".to_string()
+        }
+        "&" => {
+            "&amp".to_string()
+        }
+        "\"" => {
+            "&quot".to_string()
+        }
+        _ => {
+            token.clone()
+        }
+    }
+}
+
 fn main() {
     let filename = String::from("examples/prog.jack");
     let mut buf = Vec::<u8>::new();
@@ -145,6 +191,6 @@ fn main() {
     // print!("{:?}", contents);
     let tokens = tokenize(contents);
     for token in tokens {
-        println!("{}", token);
+        println!("{0}\t <{1}> {2} </{1}>", token, classify_token(token.clone()), markup_token(token.clone()));
     }
 }
