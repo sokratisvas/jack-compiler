@@ -1,3 +1,6 @@
+use std::fs::File;
+use std::io::prelude::*;
+
 pub fn is_symbol(token: char) -> bool {
     token == '{'
         || token == '}'
@@ -95,7 +98,7 @@ pub fn tokenize(contents: Vec<char>) -> Vec<String> {
                     }
                     position += 2;
                 } else {
-                    break;
+                    tokens.push('/'.to_string());
                 }
             }
             '\n' | ' ' | '\t' => {
@@ -113,7 +116,7 @@ pub fn tokenize(contents: Vec<char>) -> Vec<String> {
                 tokens.push(token.clone());
             }
             _ => {
-                panic!("Invalid character!");
+                println!("Invalid character! is {} ok", contents[position].clone());
             }
         }
         token.clear();
@@ -150,4 +153,21 @@ pub fn markup_token(token: String) -> String {
         "\"" => "&quot".to_string(),
         _ => token.clone(),
     }
+}
+
+pub fn tokenizer_output(tokens: Vec<String>, filename: String) -> std::io::Result<()> {
+    let outpath: String = filename.replace(".jack", "T.xml");
+    let mut output = File::create(outpath)?;
+    write!(output, "<tokens>")
+        .map_err(|err| println!("{:?}", err))
+        .ok();
+    for token in tokens {
+        write!(output, "{}", token)
+            .map_err(|err| println!("{:?}", err))
+            .ok();
+    }
+    write!(output, "</tokens>")
+        .map_err(|err| println!("{:?}", err))
+        .ok();
+    Ok(())
 }
