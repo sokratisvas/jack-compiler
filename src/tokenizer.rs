@@ -116,7 +116,7 @@ pub fn tokenize(contents: Vec<char>) -> Vec<String> {
                 tokens.push(token.clone());
             }
             _ => {
-                println!("Invalid character! is {} ok", contents[position].clone());
+                position += 1;
             }
         }
         token.clear();
@@ -147,18 +147,18 @@ pub fn markup_token(token: String) -> String {
             chars.next_back();
             chars.as_str().to_string()
         }
-        ">" => "&gt".to_string(),
-        "<" => "&lt".to_string(),
-        "&" => "&amp".to_string(),
-        "\"" => "&quot".to_string(),
+        ">" => "&gt;".to_string(),
+        "<" => "&lt;".to_string(),
+        "&" => "&amp;".to_string(),
+        "\"" => "&quot;".to_string(),
         _ => token.clone(),
     }
 }
 
 pub fn tokenizer_output(tokens: Vec<String>, filename: String) -> std::io::Result<()> {
-    let outpath: String = filename.replace(".jack", "T.xml");
+    let outpath: String = filename.replace(".jack", "T-actual.xml");
     let mut output = File::create(outpath)?;
-    write!(output, "<tokens>")
+    write!(output, "<tokens>\n")
         .map_err(|err| println!("{:?}", err))
         .ok();
     for token in tokens {
@@ -166,7 +166,7 @@ pub fn tokenizer_output(tokens: Vec<String>, filename: String) -> std::io::Resul
             .map_err(|err| println!("{:?}", err))
             .ok();
     }
-    write!(output, "</tokens>")
+    write!(output, "</tokens>\n")
         .map_err(|err| println!("{:?}", err))
         .ok();
     Ok(())
