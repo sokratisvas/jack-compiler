@@ -47,83 +47,6 @@ pub fn is_keyword(token: String) -> bool {
         || token == "return".to_string()
 }
 
-pub fn tokenize(contents: Vec<char>) -> Vec<String> {
-    let mut tokens: Vec<String> = Vec::new();
-    let mut position = 0;
-    let mut token = String::new();
-
-    while position != contents.len() {
-        match contents[position] {
-            _ if contents[position].clone().is_alphabetic() => {
-                token.push(contents[position].clone());
-                position += 1;
-                while position != contents.len()
-                    && (contents[position].is_alphanumeric() || contents[position] == '_')
-                {
-                    token.push(contents[position].clone());
-                    position += 1;
-                }
-                tokens.push(token.clone());
-            }
-            _ if contents[position].clone().is_numeric() => {
-                token.push(contents[position].clone());
-                position += 1;
-                while position != contents.len() && contents[position].clone().is_numeric() {
-                    token.push(contents[position].clone());
-                    position += 1;
-                }
-                tokens.push(token.clone());
-            }
-            _ if is_symbol(contents[position].clone()) && contents[position].clone() != '/' => {
-                token.push(contents[position].clone());
-                tokens.push(token.clone());
-                position += 1;
-            }
-            '/' => {
-                position += 1;
-
-                if position == contents.len() {
-                    break;
-                }
-
-                if contents[position].clone() == '/' {
-                    while position != contents.len() && contents[position].clone() != '\n' {
-                        position += 1;
-                    }
-                } else if contents[position].clone() == '*' {
-                    position += 1;
-                    while contents[position].clone() != '*' || contents[position + 1].clone() != '/'
-                    {
-                        position += 1;
-                    }
-                    position += 2;
-                } else {
-                    tokens.push('/'.to_string());
-                }
-            }
-            '\n' | ' ' | '\t' => {
-                position += 1;
-            }
-            '"' => {
-                position += 1;
-                token.push('"');
-                while position != contents.len() && contents[position] != '"' {
-                    token.push(contents[position].clone());
-                    position += 1;
-                }
-                position += 1;
-                token.push('"');
-                tokens.push(token.clone());
-            }
-            _ => {
-                position += 1;
-            }
-        }
-        token.clear();
-    }
-    tokens
-}
-
 pub fn classify_token(token: String) -> String {
     match token {
         _ if is_keyword(token.clone()) => "keyword".to_string(),
@@ -155,19 +78,113 @@ pub fn markup_token(token: String) -> String {
     }
 }
 
-pub fn tokenizer_output(tokens: Vec<String>, filename: String) -> std::io::Result<()> {
-    let outpath: String = filename.replace(".jack", "T-actual.xml");
-    let mut output = File::create(outpath)?;
-    write!(output, "<tokens>\n")
-        .map_err(|err| println!("{:?}", err))
-        .ok();
-    for token in tokens {
-        write!(output, "{}", token)
+pub struct Tokenizer {
+    contents: Vec<char>,
+    tokens: Vec<String>
+}
+
+impl Tokenizer {
+    pub fn new(contents: Vec<char>) -> Self {
+        Tokenizer {
+            contents: contents,
+            tokens: Vec::new()
+        }
+    }
+
+    pub fn tokenize(&mut self) {
+        let mut position = 0;
+        let mut token = String::new();
+
+        while position != self.contents.len() {
+            match self.contents[position] {
+                _ if self.contents[position].clone().is_alphabetic() => {
+                    token.push(self.contents[position].clone());
+                    position += 1;
+                    while position != self.contents.len()
+                        && (self.contents[position].is_alphanumeric() || self.contents[position] == '_')
+                    {
+                        token.push(self.contents[position].clone());
+                        position += 1;
+                    }
+                    self.tokens.push(token.clone());
+                }
+                _ if self.contents[position].clone().is_numeric() => {
+                    token.push(self.contents[position].clone());
+                    position += 1;
+                    while position != self.contents.len() && self.contents[position].clone().is_numeric() {
+                        token.push(self.contents[position].clone());
+                        position += 1;
+                    }
+                    self.tokens.push(token.clone());
+                }
+                _ if is_symbol(self.contents[position].clone()) && self.contents[position].clone() != '/' => {
+                    token.push(self.contents[position].clone());
+                    self.tokens.push(token.clone());
+                    position += 1;
+                }
+                '/' => {
+                    position += 1;
+
+                    if position == self.contents.len() {
+                        break;
+                    }
+
+                    if self.contents[position].clone() == '/' {
+                        while position != self.contents.len() && self.contents[position].clone() != '\n' {
+                            position += 1;
+                        }
+                    } else if self.contents[position].clone() == '*' {
+                        position += 1;
+                        while self.contents[position].clone() != '*' || self.contents[position + 1].clone() != '/'
+                        {
+                            position += 1;
+                        }
+                        position += 2;
+                    } else {
+                        self.tokens.push('/'.to_string());
+                    }
+                }
+                '\n' | ' ' | '\t' => {
+                    position += 1;
+                }
+                '"' => {
+                    position += 1;
+                    token.push('"');
+                    while position != self.contents.len() && self.contents[position] != '"' {
+                        token.push(self.contents[position].clone());
+                        position += 1;
+                    }
+                    position += 1;
+                    token.push('"');
+                    self.tokens.push(token.clone());
+                }
+                _ => {
+                    position += 1;
+                }
+            }
+            token.clear();
+        }
+    }
+
+    pub fn write_file(&self, filename: String) -> std::io::Result<()> {
+        let outpath: String = filename.replace(".jack", "T-actual.xml");
+        let mut output = File::create(outpath)?;
+        write!(output, "<tokens>\n")
             .map_err(|err| println!("{:?}", err))
             .ok();
+        for token in &self.tokens {
+            let token_xml = format!(
+                "<{0}> {1} </{0}>\n",
+                classify_token(token.clone()),
+                markup_token(token.clone())
+            );
+            write!(output, "{}", token_xml)
+                .map_err(|err| println!("{:?}", err))
+                .ok();
+        }
+        write!(output, "</tokens>\n")
+            .map_err(|err| println!("{:?}", err))
+            .ok();
+        Ok(())
     }
-    write!(output, "</tokens>\n")
-        .map_err(|err| println!("{:?}", err))
-        .ok();
-    Ok(())
 }

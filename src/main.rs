@@ -14,7 +14,7 @@ fn main() {
     ];
 
     for filename in files {
-        let mut buf = Vec::<u8>::new();
+        let mut buf: Vec<u8> = Vec::new();
         let mut contents: Vec<char> = Vec::new();
         let mut file = BufReader::new(
             File::open(filename.clone()).expect("Something went wrong reading the file"),
@@ -32,16 +32,9 @@ fn main() {
         }
 
         // print!("{:?}", contents);
-        let tokens = tokenizer::tokenize(contents);
-        let mut token_xml: Vec<String> = Vec::new();
-        for token in tokens {
-            token_xml.push(format!(
-                "<{0}> {1} </{0}>\n",
-                tokenizer::classify_token(token.clone()),
-                tokenizer::markup_token(token.clone())
-            ));
-        }
-        tokenizer::tokenizer_output(token_xml, filename.to_string().clone())
+        let mut tokenizer = tokenizer::Tokenizer::new(contents);
+        tokenizer.tokenize();
+        tokenizer.write_file(filename.to_string().clone())
             .map_err(|err| println!("{:?}", err))
             .ok();
     }
